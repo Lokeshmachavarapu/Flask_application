@@ -5,7 +5,7 @@ pipeline {
 
         stage('Clone Code') {
             steps {
-                git 'YOUR_GITHUB_REPO_URL'
+                git 'git 'https://github.com/Lokeshmachavarapu/Flask_application.git''
             }
         }
 
