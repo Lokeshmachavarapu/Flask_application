@@ -1,30 +1,71 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = "flask-app"
+        DOCKER_TAG = "v1"
+        SONAR_PROJECT_KEY = "flask-app"
+        SONAR_URL = "http://13.207.58.75:9000"
+    }
+
     stages {
 
-        stage('Clone Code') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/Lokeshmachavarapu/Flask_application.git'
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh """
+                        sonar-scanner \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=${SONAR_URL}
+                    """
+                }
+            }
+        }
+
+        stage('Trivy File System Scan') {
+            steps {
+                sh "trivy fs . > trivy-report.txt"
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t flask-cicd-app .'
+                sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
             }
         }
 
-        stage('Stop Old Container') {
+        stage('Run Container (Local Test)') {
             steps {
-                sh 'docker stop flask-container || true'
-                sh 'docker rm flask-container || true'
+                sh """
+                    docker stop flask-container || true
+                    docker rm flask-container || true
+                    docker run -d --name flask-container -p 5000:5000 ${DOCKER_IMAGE}:${DOCKER_TAG}
+                """
             }
         }
 
-        stage('Run New Container') {
+        stage('Push to DockerHub') {
             steps {
-                sh 'docker run -d -p 5000:5000 --name flask-container flask-cicd-app'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh """
+                        echo $PASS | docker login -u $USER --password-stdin
+                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} $USER/${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker push $USER/${DOCKER_IMAGE}:${DOCKER_TAG}
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh "kubectl apply -f k8s/ || true"
             }
         }
     }
