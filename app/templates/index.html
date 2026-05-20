@@ -1,10 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>DevOps Project</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lokesh | DevOps CI/CD Showcase</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 40px; text-align: center; }
+        .card { background: white; max-width: 600px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 5px solid #007acc; }
+        h1 { color: #007acc; margin-bottom: 5px; }
+        p { color: #666; font-size: 1.1em; }
+        .badge { display: inline-block; background: #e1f5fe; color: #0288d1; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9em; margin: 5px; }
+        .footer { margin-top: 25px; font-size: 0.85em; color: #999; }
+    </style>
 </head>
 <body>
-    <h1>Welcome Lokesh!</h1>
-    <h2>DevOps CI/CD Project Running Successfully</h2>
+
+    <div class="card">
+        <h1>🚀 Automated DevOps Pipeline Live!</h1>
+        <p>Welcome to Lokesh Machavarapu's Project Deployment Environment.</p>
+        
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+        
+        <h3>Pipeline Stack Verified:</h3>
+        <span class="badge">GitHub Webhooks</span>
+        <span class="badge">Jenkins CI/CD</span>
+        <span class="badge">Trivy Scanner</span>
+        <span class="badge">Docker Hub</span>
+        <span class="badge">AWS EC2</span>
+
+        <p class="footer">Application Version: {{ version }} | Environment: {{ environment }}</p>
+    </div>
+
 </body>
 </html>
