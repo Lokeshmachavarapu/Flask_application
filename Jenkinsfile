@@ -12,64 +12,72 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/Lokeshmachavarapu/Flask_application.git'
+                git branch: 'main',
+                    url: 'https://github.com/Lokeshmachavarapu/Flask_application.git'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                script {
-                    def scannerHome = tool 'sonar-scanner'
-                    withSonarQubeEnv('sonarqube') {
-                        sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=${SONAR_URL}
-                        """
-                    }
-                 }
-             }
+                withSonarQubeEnv('sonarqube') {
+                    sh """
+                        sonar-scanner \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=${SONAR_URL}
+                    """
+                }
+            }
         }
 
         stage('Trivy File System Scan') {
             steps {
-                sh "trivy fs . > trivy-report.txt"
+                sh 'trivy fs . > trivy-report.txt'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
             }
         }
 
-        stage('Run Container (Local Test)') {
+        stage('Run Container') {
             steps {
                 sh """
                     docker stop flask-container || true
                     docker rm flask-container || true
-                    docker run -d --name flask-container -p 5000:5000 ${DOCKER_IMAGE}:${DOCKER_TAG}
+
+                    docker run -d \
+                    --name flask-container \
+                    -p 5000:5000 \
+                    ${DOCKER_IMAGE}:${DOCKER_TAG}
                 """
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'USER',
+                        passwordVariable: 'PASS'
+                    )
+                ]) {
                     sh """
-                        echo $PASS | docker login -u $USER --password-stdin
-                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} $USER/${DOCKER_IMAGE}:${DOCKER_TAG}
-                        docker push $USER/${DOCKER_IMAGE}:${DOCKER_TAG}
+                        echo \$PASS | docker login -u \$USER --password-stdin
+                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} \$USER/${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker push \$USER/${DOCKER_IMAGE}:${DOCKER_TAG}
                     """
                 }
             }
         }
+    }
 
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh "kubectl apply -f k8s/ || true"
-            }
-        }
+    post {
+        always {
+            archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
+       }
     }
 }
