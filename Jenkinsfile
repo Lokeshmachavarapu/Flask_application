@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = "flask-app"
         DOCKER_TAG = "v1"
         SONAR_PROJECT_KEY = "flask-app"
-        SONAR_URL = "http://13.207.58.75:9000"
+        SONAR_URL = "http://13.232.160.185:9000"
     }
 
     stages {
@@ -18,15 +18,18 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonarqube') {
-                    sh """
-                        sonar-scanner \
-                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=${SONAR_URL}
-                    """
-                }
-            }
+                script {
+                    def scannerHome = tool 'sonar-scanner'
+                    withSonarQubeEnv('sonarqube') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=${SONAR_URL}
+                        """
+                    }
+                 }
+             }
         }
 
         stage('Trivy File System Scan') {
